@@ -1,0 +1,38 @@
+name: 'Install dependencies'
+
+inputs:
+  cache-key:
+    type: string
+    required: false
+
+  gpr-auth-token:
+    type: string
+    required: false
+    description: >-
+      If provided, sets up the GitHub package registry auth using the action
+      github/actions/gpr-auth
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Auth into GitHub packages registry
+      if: ${{ inputs.gpr-auth-token }}
+      uses: syltek/frontend-workflows/gpr-auth@main
+      with:
+        token: ${{ inputs.gpr-auth-token }}
+        
+    - name: Restore npm/yarn install cache
+      uses: c-hive/gha-yarn-cache@v2
+
+    - name: Prepare node_modules cache
+      id: cache-node-modules
+      uses: actions/cache@v2
+      with:
+        path: |
+          ./node_modules
+          ./**/node_modules
+        key: node_modules-${{ inputs.cache-key || hashFiles('yarn.lock', 'package-lock.json') }}
+
+    - name: Yarn install
+      shell: bash
+      run: yarn install --frozen-lockfile --ignore-scripts
