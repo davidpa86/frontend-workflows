@@ -1,0 +1,27 @@
+name: "AWS Deploy"
+description: "Deploy the app with the specified params"
+inputs:
+  s3-bucket:
+    description: "On what S3 bucket are we deploying this?"
+    required: true
+  cloudfront-distribution-id:
+    description: "What aws distribution id should be invalidated after the deploy?"
+    required: true
+  dir:
+    description: "Directory where the contents will be used to deploying"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: AWS S3 sync
+      shell: bash
+      env:
+        AWS_DEFAULT_REGION: eu-central-1
+        AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        aws s3 cp --recursive "${{ inputs.dir }}" "s3://${{ inputs.s3-bucket }}" --exclude "*.js.map"
+        aws s3 sync "${{ inputs.dir }}" "s3://${{ inputs.s3-bucket }}" --delete --exclude "*.js.map"
+        aws configure set preview.cloudfront true
+        aws cloudfront create-invalidation --distribution-id "${{ inputs.cloudfront-distribution-id }}" --paths '/*'

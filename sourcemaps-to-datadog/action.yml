@@ -1,0 +1,40 @@
+name: Upload source maps to Datadog
+description: Upload your source maps to Datadog to de-obfuscate your different stack traces. For any given error, you can access the file path, line number, and code snippet for each frame of the related stack trace.
+# ENV needed:
+# DATADOG_API_KEY - Dedicated Datadog API key, export it as an environment variable
+
+inputs:
+  version:
+    description: Used to match the version tag set on the RUM SDK
+    type: string
+    required: true
+  service_name:
+    description: Set as the name of the service you're uploading sourcemaps for
+    type: string
+    required: true
+  path:
+    description: Directory in which sourcemaps are located
+    type: string
+    required: true
+  prefix:
+    description: Prefix common to all your JS source files, depending on the URL they are served from
+    type: string
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Upload sourcemaps
+      env:
+        DATADOG_SITE: "datadoghq.eu"
+        DATADOG_API_HOST: "api.datadoghq.eu"
+      shell: bash
+      run: |
+        npx @datadog/datadog-ci sourcemaps upload ${{ inputs.path }} \
+        --service=${{ inputs.service_name }} \
+        --release-version=$${{ inputs.version }} \
+        --minified-path-prefix=${{ inputs.prefix }}

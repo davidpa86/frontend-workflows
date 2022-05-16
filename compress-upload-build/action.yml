@@ -1,0 +1,36 @@
+name: "Compress build and upload"
+description: "Compress build and upload it in order to debug possible issues"
+inputs:
+  artifact-name:
+    required: true
+  retention-days:
+    description: Github storage days, Keep this value low in order to reduce github storage associated costs
+    type: number
+    default: 1
+  folder:
+    type: string
+    default: build
+    description: Name of folder which it will be zipped and uploaded
+  path:
+    type: string
+    default: build
+    description: Path of folder which it will be zipped and uploaded
+
+runs:
+  using: composite
+  steps:
+    - name: Compress build
+      shell: bash
+      # We compress before uploading in order to minimize the impact on github storage costs
+      # and to reduce the upload time
+      run: cd ${{ inputs.path }} && zip -r9 ../${{ inputs.folder }}.zip . && cd -
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v2
+      with:
+        # Upload the built artifact so we can debug possible issues
+        name: ${{ inputs.artifact-name }}
+        path: ./${{ inputs.folder }}.zip
+        if-no-files-found: error
+        # Keep this value low in order to reduce github storage associated costs
+        retention-days: ${{ inputs.retention-days }}
