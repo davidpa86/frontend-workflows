@@ -1,5 +1,8 @@
 name: Upload source maps to Datadog
-description: Upload your source maps to Datadog to de-obfuscate your different stack traces. For any given error, you can access the file path, line number, and code snippet for each frame of the related stack trace.
+description: >-
+  Upload your source maps to Datadog to de-obfuscate your different stack traces.
+  For any given error, you can access the file path, line number, and code snippet
+  for each frame of the related stack trace.
 # ENV needed:
 # DATADOG_API_KEY - Dedicated Datadog API key, export it as an environment variable
 
@@ -27,11 +30,16 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v2
-
+    - name: Check if DATADOG_API_KEY defined
+      shell: bash
+      if: "${{ env.DATADOG_API_KEY == '' }}"
+      run: |
+        echo env variable DATADOG_API_KEY must be defined
+        exit 1
     - name: Upload sourcemaps
       env:
-        DATADOG_SITE: "datadoghq.eu"
-        DATADOG_API_HOST: "api.datadoghq.eu"
+        DATADOG_SITE: ${{ env.DATADOG_SITE || "datadoghq.eu" }}
+        DATADOG_API_HOST: ${{ env.DATADOG_API_HOST || "api.datadoghq.eu" }}
       shell: bash
       run: |
         npx @datadog/datadog-ci sourcemaps upload ${{ inputs.path }} \
